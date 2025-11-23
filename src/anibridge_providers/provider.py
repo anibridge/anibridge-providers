@@ -39,7 +39,6 @@ class BaseProvider(Protocol):
             config (dict | None): Any configuration options that were detected with the
                 provider's namespace as a prefix.
         """
-        ...
 
     async def initialize(self) -> None:
         """Asynchronous initialization hook.
