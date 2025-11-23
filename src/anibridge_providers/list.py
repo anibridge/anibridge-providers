@@ -244,6 +244,7 @@ class ListEntry(ListEntity[ListProviderT], Protocol[ListProviderT]):
         ...
 
 
+@runtime_checkable
 class ListProvider(BaseProvider, Protocol):
     """Interface for a provider that exposes a user media list."""
 

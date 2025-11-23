@@ -19,6 +19,9 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+dependencies = [
+    "starlette>=0.50.0",
+]
 
 [tool.hatch.build]
 packages = ["src/anibridge_providers"]

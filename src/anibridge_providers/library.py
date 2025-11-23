@@ -6,6 +6,8 @@ from datetime import datetime
 from enum import StrEnum
 from typing import ClassVar, Literal, Protocol, Self, TypeVar, runtime_checkable
 
+from starlette.requests import Request
+
 from anibridge_providers.provider import BaseProvider
 
 __all__ = [
@@ -276,6 +278,7 @@ class HistoryEntry:
     viewed_at: datetime  # Timestamps must be in UTC
 
 
+@runtime_checkable
 class LibraryProvider(BaseProvider, Protocol):
     """Interface for a provider that exposes a user media library."""
 
@@ -310,5 +313,18 @@ class LibraryProvider(BaseProvider, Protocol):
                 watched/viewed.
             keys (Sequence[str] | None): If provided, only include items whose keys are
                 in this sequence.
+        """
+        ...
+
+    async def parse_webhook(self, request: Request) -> tuple[bool, Sequence[str]]:
+        """Parse a webhook to extract media keys and check if it targets this profile.
+
+        Args:
+            request (Request): The incoming web request.
+
+        Returns:
+            tuple[bool, Sequence[str] | None]: A tuple containing a boolean indicating
+                whether the webhook is valid and targetting the profile, and a sequence
+                of library media keys to sync, or None if not applicable.
         """
         ...

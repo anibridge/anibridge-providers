@@ -6,7 +6,7 @@ extend this protocol for provider-specific operations.
 """
 
 from dataclasses import dataclass
-from typing import ClassVar, Protocol
+from typing import ClassVar, Protocol, runtime_checkable
 
 __all__ = ["BaseProvider", "User"]
 
@@ -23,6 +23,7 @@ class User:
         return hash(self.key)
 
 
+@runtime_checkable
 class BaseProvider(Protocol):
     """Minimal common provider protocol.
 

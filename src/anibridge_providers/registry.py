@@ -1,13 +1,13 @@
 """Provider registry utilities for AniBridge plugins."""
 
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from enum import Enum
 from importlib import metadata
 
-from anibridge_providers.library import LibraryProviderT
-from anibridge_providers.list import ListProviderT
+from anibridge_providers.library import LibraryProvider, LibraryProviderT
+from anibridge_providers.list import ListProvider, ListProviderT
 from anibridge_providers.provider import BaseProvider
 
 __all__ = [
@@ -187,8 +187,7 @@ def load_entry_points(group: str = ENTRY_POINT_GROUP) -> None:
     Args:
         group (str): The entry point group to load providers from.
     """
-    eps = metadata.entry_points()
-    selected = eps.select(group=group) if hasattr(eps, "select") else eps.get(group, [])
+    selected: Iterable[metadata.EntryPoint] = metadata.entry_points(group=group)
 
     for entry_point in selected:
         try:
@@ -203,11 +202,18 @@ def load_entry_points(group: str = ENTRY_POINT_GROUP) -> None:
             except TypeError:
                 obj()
         elif isinstance(obj, type):
-            # Support direct provider class entry points (namespace inference)
             namespace = getattr(obj, "NAMESPACE", entry_point.name)
-            kind_value = getattr(obj, "PROVIDER_KIND", None)
-            if not isinstance(kind_value, ProviderKind):
-                _LOG.warning(f"Provider class '{obj}' missing PROVIDER_KIND; skipping")
+            kind_value = (
+                ProviderKind.LIST
+                if isinstance(obj, ListProvider)
+                else (
+                    ProviderKind.LIBRARY if isinstance(obj, LibraryProvider) else None
+                )
+            )
+            if kind_value is None:
+                _LOG.warning(
+                    f"Could not determine provider kind for class '{obj}'; skipping"
+                )
                 continue
             _register_kind(kind_value, namespace, obj)
         else:
