@@ -4,9 +4,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
-from typing import ClassVar, Literal, Protocol, runtime_checkable
+from typing import ClassVar, Literal, Protocol, Self, TypeVar, runtime_checkable
 
-from anibridge_providers.provider import BaseProvider, User
+from anibridge_providers.provider import BaseProvider
 
 __all__ = [
     "ExternalId",
@@ -21,6 +21,9 @@ __all__ = [
     "LibraryShow",
     "MediaKind",
 ]
+
+
+LibraryProviderT = TypeVar("LibraryProviderT", bound="LibraryProvider", covariant=True)
 
 
 class MediaKind(StrEnum):
@@ -45,14 +48,14 @@ class ExternalId:
 
 
 @runtime_checkable
-class LibraryEntity(Protocol):
+class LibraryEntity(Protocol[LibraryProviderT]):
     """Base protocol for library entities."""
 
     key: str
     media_kind: MediaKind
     title: str
 
-    def provider(self) -> LibraryProvider:
+    def provider(self) -> LibraryProviderT:
         """Get the library provider this entity belongs to.
 
         Returns:
@@ -70,12 +73,12 @@ class LibraryEntity(Protocol):
 
 
 @runtime_checkable
-class LibrarySection(LibraryEntity, Protocol):
+class LibrarySection(LibraryEntity[LibraryProviderT], Protocol[LibraryProviderT]):
     """Represents a logical collection/section within the media library."""
 
 
 @runtime_checkable
-class LibraryMedia(LibraryEntity, Protocol):
+class LibraryMedia(LibraryEntity[LibraryProviderT], Protocol[LibraryProviderT]):
     """Base protocol for library items."""
 
     @property
@@ -153,7 +156,7 @@ class LibraryMedia(LibraryEntity, Protocol):
         """
         ...
 
-    def section(self) -> LibrarySection:
+    def section(self) -> LibrarySection[LibraryProviderT]:
         """Get the library section this media item belongs to.
 
         Returns:
@@ -163,12 +166,12 @@ class LibraryMedia(LibraryEntity, Protocol):
 
 
 @runtime_checkable
-class LibraryMovie(LibraryMedia, Protocol):
+class LibraryMovie(LibraryMedia[LibraryProviderT], Protocol[LibraryProviderT]):
     """Protocol for movie items in a media library."""
 
 
 @runtime_checkable
-class LibraryShow(LibraryMedia, Protocol):
+class LibraryShow(LibraryMedia[LibraryProviderT], Protocol[LibraryProviderT]):
     """Protocol for episodic series items in a media library."""
 
     @property
@@ -182,7 +185,7 @@ class LibraryShow(LibraryMedia, Protocol):
         """
         ...
 
-    def episodes(self) -> Sequence[LibraryEpisode]:
+    def episodes(self) -> Sequence[LibraryEpisode[LibraryProviderT]]:
         """Get child episodes belonging to the show.
 
         Returns:
@@ -190,7 +193,7 @@ class LibraryShow(LibraryMedia, Protocol):
         """
         ...
 
-    def seasons(self) -> Sequence[LibrarySeason]:
+    def seasons(self) -> Sequence[LibrarySeason[LibraryProviderT]]:
         """Get child seasons belonging to the show.
 
         Returns:
@@ -200,12 +203,12 @@ class LibraryShow(LibraryMedia, Protocol):
 
 
 @runtime_checkable
-class LibrarySeason(LibraryMedia, Protocol):
+class LibrarySeason(LibraryMedia[LibraryProviderT], Protocol[LibraryProviderT]):
     """Protocol for season items in a media library."""
 
     index: int
 
-    def episodes(self) -> Sequence[LibraryEpisode]:
+    def episodes(self) -> Sequence[LibraryEpisode[LibraryProviderT]]:
         """Get child episodes belonging to the season.
 
         Returns:
@@ -213,7 +216,7 @@ class LibrarySeason(LibraryMedia, Protocol):
         """
         ...
 
-    def show(self) -> LibraryShow:
+    def show(self) -> LibraryShow[LibraryProviderT]:
         """Get the parent show of the season.
 
         Returns:
@@ -230,13 +233,13 @@ class LibrarySeason(LibraryMedia, Protocol):
 
 
 @runtime_checkable
-class LibraryEpisode(LibraryMedia, Protocol):
+class LibraryEpisode(LibraryMedia[LibraryProviderT], Protocol[LibraryProviderT]):
     """Protocol for episode items in a media library."""
 
     index: int
     season_index: int
 
-    def season(self) -> LibrarySeason:
+    def season(self) -> LibrarySeason[LibraryProviderT]:
         """Get the parent season of the episode.
 
         Returns:
@@ -244,7 +247,7 @@ class LibraryEpisode(LibraryMedia, Protocol):
         """
         ...
 
-    def show(self) -> LibraryShow:
+    def show(self) -> LibraryShow[LibraryProviderT]:
         """Get the parent show of the episode.
 
         Returns:
@@ -273,28 +276,7 @@ class LibraryProvider(BaseProvider, Protocol):
 
     NAMESPACE: ClassVar[str]
 
-    def __init__(self, *, config: dict | None = None) -> None:
-        """Initialize the library provider.
-
-        Args:
-            config (dict | None): Any configuration options that were detected with the
-                provider's namespace as a prefix.
-        """
-        self.config = config or {}
-
-    async def initialize(self) -> None:
-        """Perform any asynchronous startup work before the provider is used."""
-        ...
-
-    def user(self) -> User | None:
-        """Get the user associated with the library.
-
-        Returns:
-            User | None: The user information, or None if not available.
-        """
-        ...
-
-    async def get_sections(self) -> Sequence[LibrarySection]:
+    async def get_sections(self) -> Sequence[LibrarySection[Self]]:
         """Get all available library sections.
 
         Returns:
@@ -304,12 +286,12 @@ class LibraryProvider(BaseProvider, Protocol):
 
     async def list_items(
         self,
-        section: LibrarySection,
+        section: LibrarySection[Self],
         *,
         min_last_modified: datetime | None = None,
         require_watched: bool = False,
         keys: Sequence[str] | None = None,
-    ) -> Sequence[LibraryMedia]:
+    ) -> Sequence[LibraryMedia[Self]]:
         """List items in a library section.
 
         Each item returned must belong to the specified section and meet the provided
@@ -324,12 +306,4 @@ class LibraryProvider(BaseProvider, Protocol):
             keys (Sequence[str] | None): If provided, only include items whose keys are
                 in this sequence.
         """
-        ...
-
-    async def clear_cache(self) -> None:
-        """Clear any cached data within the provider."""
-        ...
-
-    async def close(self) -> None:
-        """Close the library provider and release any resources."""
         ...

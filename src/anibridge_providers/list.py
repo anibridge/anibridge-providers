@@ -5,9 +5,9 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 from functools import total_ordering
-from typing import Any, ClassVar, Protocol, runtime_checkable
+from typing import Any, ClassVar, Protocol, Self, TypeVar, runtime_checkable
 
-from anibridge_providers.provider import BaseProvider, User
+from anibridge_providers.provider import BaseProvider
 
 __all__ = [
     "ListEntity",
@@ -18,6 +18,9 @@ __all__ = [
     "ListStatus",
     "ProviderBackupEntries",
 ]
+
+
+ListProviderT = TypeVar("ListProviderT", bound="ListProvider", covariant=True)
 
 
 class ListMediaType(StrEnum):
@@ -74,13 +77,13 @@ class ProviderBackupEntries:
 
 
 @runtime_checkable
-class ListEntity(Protocol):
+class ListEntity(Protocol[ListProviderT]):
     """Base protocol for list entities."""
 
     key: str
     title: str
 
-    def provider(self) -> ListProvider:
+    def provider(self) -> ListProviderT:
         """Get the list provider this entity belongs to.
 
         Returns:
@@ -101,7 +104,7 @@ class ListEntity(Protocol):
 
 
 @runtime_checkable
-class ListMedia(ListEntity, Protocol):
+class ListMedia(ListEntity[ListProviderT], Protocol[ListProviderT]):
     """Protocol for media items in a list."""
 
     @property
@@ -121,7 +124,7 @@ class ListMedia(ListEntity, Protocol):
 
 
 @runtime_checkable
-class ListEntry(ListEntity, Protocol):
+class ListEntry(ListEntity[ListProviderT], Protocol[ListProviderT]):
     """Base protocol for list entries."""
 
     @property
@@ -231,7 +234,7 @@ class ListEntry(ListEntity, Protocol):
         """Return the total number of units (episodes/chapters) for the media."""
         ...
 
-    def media(self) -> ListMedia:
+    def media(self) -> ListMedia[ListProviderT]:
         """Get the media item associated with the list entry.
 
         Returns:
@@ -242,23 +245,6 @@ class ListEntry(ListEntity, Protocol):
 
 class ListProvider(BaseProvider, Protocol):
     """Interface for a provider that exposes a user media list."""
-
-    NAMESPACE: ClassVar[str]
-
-    config: dict
-
-    def __init__(self, *, config: dict | None = None) -> None:
-        """Initialize the list provider.
-
-        Args:
-            config (dict | None): Any configuration options that were detected with the
-                provider's namespace as a prefix.
-        """
-        self.config = config or {}
-
-    async def initialize(self) -> None:
-        """Perform any asynchronous startup work before the provider is used."""
-        ...
 
     async def backup_list(self) -> str:
         """Backup the entire list from the provider.
@@ -281,7 +267,7 @@ class ListProvider(BaseProvider, Protocol):
         """
         ...
 
-    async def get_entry(self, key: str) -> ListEntry | None:
+    async def get_entry(self, key: str) -> ListEntry[Self] | None:
         """Retrieve a list entry by its media key.
 
         Args:
@@ -292,7 +278,7 @@ class ListProvider(BaseProvider, Protocol):
         """
         ...
 
-    async def build_entry(self, key: str) -> ListEntry:
+    async def build_entry(self, key: str) -> ListEntry[Self]:
         """Construct a list entry for the supplied media key.
 
         Implementations must return a list entry instance suitable for creating or
@@ -310,7 +296,7 @@ class ListProvider(BaseProvider, Protocol):
 
     async def get_entries_batch(
         self, keys: Sequence[str]
-    ) -> Sequence[ListEntry | None]:
+    ) -> Sequence[ListEntry[Self] | None]:
         """Retrieve multiple list entries by their media keys.
 
         The order of the returned sequence must match the order of the input keys.
@@ -322,7 +308,7 @@ class ListProvider(BaseProvider, Protocol):
             Sequence[ListEntry | None]: A sequence of list entries, with None for any
                 not found.
         """
-        entries: list[ListEntry | None] = []
+        entries: list[ListEntry[Self] | None] = []
         for key in keys:
             entry = await self.get_entry(key)
             entries.append(entry)
@@ -350,7 +336,7 @@ class ListProvider(BaseProvider, Protocol):
         """Convert a raw backup payload into entries ready for restore."""
         raise NotImplementedError("Backup parsing not implemented for this provider.")
 
-    async def search(self, query: str) -> Sequence[ListEntry]:
+    async def search(self, query: str) -> Sequence[ListEntry[Self]]:
         """Search the provider for entries matching the query.
 
         Args:
@@ -361,7 +347,9 @@ class ListProvider(BaseProvider, Protocol):
         """
         ...
 
-    async def update_entry(self, key: str, entry: ListEntry) -> ListEntry | None:
+    async def update_entry(
+        self, key: str, entry: ListEntry[Self]
+    ) -> ListEntry[Self] | None:
         """Update a list entry with new information.
 
         Args:
@@ -374,8 +362,8 @@ class ListProvider(BaseProvider, Protocol):
         ...
 
     async def update_entries_batch(
-        self, entries: Sequence[ListEntry]
-    ) -> Sequence[ListEntry | None]:
+        self, entries: Sequence[ListEntry[Self]]
+    ) -> Sequence[ListEntry[Self] | None]:
         """Update multiple list entries in a single operation.
 
         This is optional and may not be supported by all providers.
@@ -387,24 +375,8 @@ class ListProvider(BaseProvider, Protocol):
             Sequence[ListEntry | None]: A sequence of updated list entries, with None
                 for any that could not be updated.
         """
-        updated_entries: list[ListEntry | None] = []
+        updated_entries: list[ListEntry[Self] | None] = []
         for entry in entries:
             updated_entry = await self.update_entry(entry.media().key, entry)
             updated_entries.append(updated_entry)
         return updated_entries
-
-    def user(self) -> User | None:
-        """Get the user associated with the list.
-
-        Returns:
-            User | None: The user information, or None if not available.
-        """
-        ...
-
-    async def clear_cache(self) -> None:
-        """Clear any cached data within the provider."""
-        ...
-
-    async def close(self) -> None:
-        """Close the list provider and release any resources."""
-        ...
