@@ -6,8 +6,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from importlib import metadata
 
-from anibridge_providers.library import LibraryProvider
-from anibridge_providers.list import ListProvider
+from anibridge_providers.library import LibraryProviderT
+from anibridge_providers.list import ListProviderT
 from anibridge_providers.provider import BaseProvider
 
 __all__ = [
@@ -37,10 +37,6 @@ class ProviderDescriptor:
     namespace: str
     kind: ProviderKind
     provider_cls: type[BaseProvider]
-
-    def __post_init__(self) -> None:
-        """Normalize the namespace to a consistent lowercase form."""
-        self.namespace = self.namespace.lower()
 
 
 @dataclass(slots=True)
@@ -123,6 +119,8 @@ def _register_kind(
     provider_cls: type[BaseProvider],
 ) -> type[BaseProvider]:
     """Register a provider class for the given kind and namespace."""
+    namespace = namespace.lower()
+    provider_cls.NAMESPACE = namespace
     descriptor = ProviderDescriptor(
         namespace=namespace,
         kind=kind,
@@ -134,7 +132,7 @@ def _register_kind(
 
 def register_library_provider(
     namespace: str,
-) -> Callable[[type[LibraryProvider]], type[LibraryProvider]]:
+) -> Callable[[type[LibraryProviderT]], type[LibraryProviderT]]:
     """Decorator registering a LibraryProvider class for the given namespace.
 
     Example:
@@ -149,15 +147,16 @@ def register_library_provider(
         Callable[[type[BaseProvider]], type[BaseProvider]]: The decorator function.
     """
 
-    def decorator(cls: type[LibraryProvider]) -> type[LibraryProvider]:
-        return _register_kind(ProviderKind.LIBRARY, namespace, cls)
+    def decorator(cls: type[LibraryProviderT]) -> type[LibraryProviderT]:
+        _register_kind(ProviderKind.LIBRARY, namespace, cls)
+        return cls
 
     return decorator
 
 
 def register_list_provider(
     namespace: str,
-) -> Callable[[type[ListProvider]], type[ListProvider]]:
+) -> Callable[[type[ListProviderT]], type[ListProviderT]]:
     """Decorator registering a ListProvider class for the given namespace.
 
     Example:
@@ -172,8 +171,9 @@ def register_list_provider(
         Callable[[type[ListProvider]], type[ListProvider]]: The decorator function.
     """
 
-    def decorator(cls: type[ListProvider]) -> type[ListProvider]:
-        return _register_kind(ProviderKind.LIST, namespace, cls)
+    def decorator(cls: type[ListProviderT]) -> type[ListProviderT]:
+        _register_kind(ProviderKind.LIST, namespace, cls)
+        return cls
 
     return decorator
 

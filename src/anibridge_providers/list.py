@@ -15,6 +15,7 @@ __all__ = [
     "ListMedia",
     "ListMediaType",
     "ListProvider",
+    "ListProviderT",
     "ListStatus",
     "ProviderBackupEntries",
 ]

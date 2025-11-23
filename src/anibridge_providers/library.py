@@ -16,6 +16,7 @@ __all__ = [
     "LibraryMedia",
     "LibraryMovie",
     "LibraryProvider",
+    "LibraryProviderT",
     "LibrarySeason",
     "LibrarySection",
     "LibraryShow",
