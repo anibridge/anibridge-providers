@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from importlib import metadata
 
+from anibridge_providers.library import LibraryProvider
+from anibridge_providers.list import ListProvider
 from anibridge_providers.provider import BaseProvider
 
 __all__ = [
@@ -132,12 +134,12 @@ def _register_kind(
 
 def register_library_provider(
     namespace: str,
-) -> Callable[[type[BaseProvider]], type[BaseProvider]]:
+) -> Callable[[type[LibraryProvider]], type[LibraryProvider]]:
     """Decorator registering a LibraryProvider class for the given namespace.
 
     Example:
         @register_library_provider("my_namespace")
-        class MyLibraryProvider(BaseProvider):
+        class MyLibraryProvider(LibraryProvider):
             ...
 
     Args:
@@ -147,7 +149,7 @@ def register_library_provider(
         Callable[[type[BaseProvider]], type[BaseProvider]]: The decorator function.
     """
 
-    def decorator(cls: type[BaseProvider]) -> type[BaseProvider]:
+    def decorator(cls: type[LibraryProvider]) -> type[LibraryProvider]:
         return _register_kind(ProviderKind.LIBRARY, namespace, cls)
 
     return decorator
@@ -155,22 +157,22 @@ def register_library_provider(
 
 def register_list_provider(
     namespace: str,
-) -> Callable[[type[BaseProvider]], type[BaseProvider]]:
+) -> Callable[[type[ListProvider]], type[ListProvider]]:
     """Decorator registering a ListProvider class for the given namespace.
 
     Example:
         @register_list_provider("my_namespace")
-        class MyListProvider(BaseProvider):
+        class MyListProvider(ListProvider):
             ...
 
     Args:
         namespace (str): The namespace of the list provider.
 
     Returns:
-        Callable[[type[BaseProvider]], type[BaseProvider]]: The decorator function.
+        Callable[[type[ListProvider]], type[ListProvider]]: The decorator function.
     """
 
-    def decorator(cls: type[BaseProvider]) -> type[BaseProvider]:
+    def decorator(cls: type[ListProvider]) -> type[ListProvider]:
         return _register_kind(ProviderKind.LIST, namespace, cls)
 
     return decorator
