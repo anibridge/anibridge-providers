@@ -11,6 +11,7 @@ from anibridge_providers.provider import BaseProvider
 __all__ = [
     "ExternalId",
     "HistoryEntry",
+    "IdNameSpace",
     "LibraryEntity",
     "LibraryEpisode",
     "LibraryMedia",
@@ -36,11 +37,14 @@ class MediaKind(StrEnum):
     EPISODE = "episode"
 
 
+IdNameSpace = Literal["anidb", "anilist", "imdb", "mal", "plex", "tmdb", "tvdb"]
+
+
 @dataclass(frozen=True, slots=True)
 class ExternalId:
     """External identifier for a media item."""
 
-    namespace: str
+    namespace: IdNameSpace
     value: str
 
     def __repr__(self) -> str:
