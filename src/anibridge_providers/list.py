@@ -1,11 +1,10 @@
 """List provider protocols for media libraries."""
 
 from collections.abc import Sequence
-from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 from functools import total_ordering
-from typing import Any, ClassVar, Protocol, Self, TypeVar, runtime_checkable
+from typing import ClassVar, Protocol, Self, TypeVar, runtime_checkable
 
 from anibridge_providers.provider import BaseProvider
 
@@ -17,7 +16,6 @@ __all__ = [
     "ListProvider",
     "ListProviderT",
     "ListStatus",
-    "ProviderBackupEntries",
 ]
 
 
@@ -67,14 +65,6 @@ class ListStatus(StrEnum):
         if not isinstance(other, ListStatus):
             return NotImplemented
         return self.priority == other.priority
-
-
-@dataclass(frozen=True, slots=True)
-class ProviderBackupEntries:
-    """Parsed provider backup payload ready for restoration."""
-
-    entries: Sequence[object]
-    user: str | None = None
 
 
 @runtime_checkable
@@ -317,7 +307,7 @@ class ListProvider(BaseProvider, Protocol):
         return entries
 
     async def restore_list(self, backup: str) -> None:
-        """Restore the list from a backup sequence of list entries.
+        """Restore the list from a serialized backup string.
 
         This is optional and may not be supported by all providers.
 
@@ -325,18 +315,6 @@ class ListProvider(BaseProvider, Protocol):
             backup (str): The serialized string representation of the list entries.
         """
         raise NotImplementedError("List restore not implemented for this provider.")
-
-    async def restore_entries(self, entries: Sequence[object]) -> None:
-        """Restore a collection of list entries in bulk if supported."""
-        raise NotImplementedError(
-            "Entry restoration not implemented for this provider."
-        )
-
-    def deserialize_backup_entries(
-        self, payload: dict[str, Any]
-    ) -> ProviderBackupEntries:
-        """Convert a raw backup payload into entries ready for restore."""
-        raise NotImplementedError("Backup parsing not implemented for this provider.")
 
     async def search(self, query: str) -> Sequence[ListEntry[Self]]:
         """Search the provider for entries matching the query.
