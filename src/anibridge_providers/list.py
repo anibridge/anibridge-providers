@@ -205,7 +205,7 @@ class ListEntry(ListEntity[ListProviderT], Protocol[ListProviderT]):
         """Get the timestamp when the user started watching the entry.
 
         Returns:
-            datetime | None: The UTC timestamp when started, or None if not started.
+            datetime | None: Timestamp when started, or None if not started.
         """
         ...
 
@@ -221,7 +221,7 @@ class ListEntry(ListEntity[ListProviderT], Protocol[ListProviderT]):
         This is the timestamp when the entry was completed for the *first* time.
 
         Returns:
-            datetime | None: The UTC timestamp when finished, or None if not finished.
+            datetime | None: Timestamp when finished, or None if not finished.
         """
         ...
 

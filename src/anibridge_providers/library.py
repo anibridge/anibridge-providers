@@ -275,7 +275,7 @@ class HistoryEntry:
     """User history event for an item in the library."""
 
     library_key: str
-    viewed_at: datetime  # Timestamps must be in UTC
+    viewed_at: datetime
 
 
 @runtime_checkable
